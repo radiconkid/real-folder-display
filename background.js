@@ -49,9 +49,17 @@ async function getFolderLabel(tabId) {
   const showBanner = await shouldShowBanner(tabId, message);
   if (!showBanner) return null;
 
-  return accountName
+  const label = accountName
     ? `実際のフォルダー: ${accountName} / ${folderName}`
     : `実際のフォルダー: ${folderName}`;
+
+  // バナークリックで実フォルダーへ移動できるよう、フォルダー情報も返す
+  return {
+    label,
+    accountId: folder ? folder.accountId : null,
+    path: folder ? folder.path : null,
+    messageId: message.id || null,
+  };
 }
 
 // メール本文内に注入されたスクリプト(content/inject.js)からの問い合わせに応答する
@@ -61,8 +69,43 @@ browser.runtime.onMessage.addListener((msg, sender) => {
   if (!tabId) return Promise.resolve(null);
 
   return getFolderLabel(tabId)
-    .then((label) => (label ? { label } : null))
+    .then((info) =>
+      info
+        ? {
+            label: info.label,
+            accountId: info.accountId,
+            path: info.path,
+            messageId: info.messageId,
+          }
+        : null
+    )
     .catch(() => null);
+});
+
+// バナークリック時に実フォルダーへ移動し、そのメールを開くための要求に応答する
+browser.runtime.onMessage.addListener((msg, sender) => {
+  if (!msg || msg.type !== "real-folder-display:navigate") return;
+  const tabId = sender.tab && sender.tab.id;
+  if (!tabId || !msg.accountId || !msg.path) return Promise.resolve(false);
+
+  return browser.mailTabs
+    .update(tabId, {
+      displayedFolder: { accountId: msg.accountId, path: msg.path },
+    })
+    .then(async () => {
+      if (msg.messageId) {
+        try {
+          await browser.mailTabs.setSelectedMessages(tabId, [msg.messageId]);
+        } catch (e) {
+          console.error("実際のフォルダー表示: メッセージ選択に失敗しました", e);
+        }
+      }
+      return true;
+    })
+    .catch((e) => {
+      console.error("実際のフォルダー表示: フォルダー移動に失敗しました", e);
+      return false;
+    });
 });
 
 // メール本文の先頭にバナーを表示するためのスクリプトを登録する。

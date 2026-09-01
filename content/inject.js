@@ -5,7 +5,7 @@
 (function () {
   const BANNER_ID = "__real-folder-banner__";
 
-  function createBanner(text) {
+  function createBanner(text, accountId, path, messageId) {
     if (document.getElementById(BANNER_ID)) return;
     const banner = document.createElement("div");
     banner.id = BANNER_ID;
@@ -21,7 +21,22 @@
         "-apple-system, 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif",
       borderBottom: "1px solid #f0d78a",
       whiteSpace: "pre-wrap",
+      cursor: accountId && path ? "pointer" : "default",
+      textDecoration: accountId && path ? "underline" : "none",
     });
+    if (accountId && path) {
+      banner.title = "クリックで実際のフォルダーに移動";
+      banner.addEventListener("click", () => {
+        browser.runtime
+          .sendMessage({
+            type: "real-folder-display:navigate",
+            accountId,
+            path,
+            messageId,
+          })
+          .catch(() => {});
+      });
+    }
     if (document.body) {
       document.body.insertBefore(banner, document.body.firstChild);
     }
@@ -32,7 +47,7 @@
       .sendMessage({ type: "real-folder-display:get-info" })
       .then((res) => {
         if (res && res.label) {
-          createBanner(res.label);
+          createBanner(res.label, res.accountId, res.path, res.messageId);
         }
       })
       .catch(() => {

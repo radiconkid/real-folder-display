@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "実際のフォルダー表示",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "統合フォルダーなどで表示中のメールが実際にどのアカウント・フォルダーにあるかを表示します。",
   "browser_specific_settings": {
     "gecko": {
