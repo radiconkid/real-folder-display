@@ -1,3 +1,4 @@
+![Version](https://img.shields.io/badge/version-v0.0.1-blue.svg)
 # 実際のフォルダー表示（Thunderbird / Betterbird アドオン）
 
 統合フォルダー（Unified Folders / スマートフォルダー）などでメールを開いたとき、
